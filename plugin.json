@@ -1,0 +1,26 @@
+{
+  "slug": "BinauralBeats",
+  "name": "Binaural Beater ",
+  "version": "1.0.0",
+  "license": "proprietary",
+  "brand": "Open Binaurals",
+  "author": "Alex ",
+  "authorEmail": "",
+  "authorUrl": "",
+  "pluginUrl": "",
+  "manualUrl": "",
+  "sourceUrl": "",
+  "donateUrl": "",
+  "changelogUrl": "",
+  "modules": [
+    {
+      "slug": "BinauralBeater",
+      "name": "BinauralBeater",
+      "description": "Generates Binaural Beats with many modulable parameters ",
+      "tags": [
+        "Binaural",
+        "synth voice"
+      ]
+    }
+  ]
+}
