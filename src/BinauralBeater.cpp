@@ -98,6 +98,7 @@ struct BinauralBeater : Module {
     AMD_CV_IN_INPUT,
     FMRATE_CV_IN_INPUT,
     FMRANGE_CV_IN_INPUT,
+    SYNC_IN_INPUT,
     INPUTS_LEN
   };
   enum OutputId { L_OUT_OUTPUT, R_OUT_OUTPUT, OUTPUTS_LEN };
@@ -148,6 +149,7 @@ struct BinauralBeater : Module {
     configInput(AMD_CV_IN_INPUT, "Amplitude modulation depth CV");
     configInput(FMRATE_CV_IN_INPUT, "Frequency modulation rate CV");
     configInput(FMRANGE_CV_IN_INPUT, "Frequency modulation range CV");
+    configInput(SYNC_IN_INPUT, "Time / Phase sync input");
 
     configOutput(L_OUT_OUTPUT, "Left output");
     configOutput(R_OUT_OUTPUT, "Right output");
@@ -191,24 +193,20 @@ struct BinauralBeater : Module {
   }
 
   void applyPersistentState() {
-    persistentState.beatRangeIndex =
-        static_cast<int>(clampIndex<kBeatMaxOptions.size()>(
-            persistentState.beatRangeIndex));
+    persistentState.beatRangeIndex = static_cast<int>(
+        clampIndex<kBeatMaxOptions.size()>(persistentState.beatRangeIndex));
     persistentState.carrierRangeIndex =
         static_cast<int>(clampIndex<kCarrierMaxOptions.size()>(
             persistentState.carrierRangeIndex));
-    persistentState.amRateRangeIndex =
-        static_cast<int>(clampIndex<kAmRateMaxOptions.size()>(
-            persistentState.amRateRangeIndex));
-    persistentState.fmRateRangeIndex =
-        static_cast<int>(clampIndex<kFmRateMaxOptions.size()>(
-            persistentState.fmRateRangeIndex));
+    persistentState.amRateRangeIndex = static_cast<int>(
+        clampIndex<kAmRateMaxOptions.size()>(persistentState.amRateRangeIndex));
+    persistentState.fmRateRangeIndex = static_cast<int>(
+        clampIndex<kFmRateMaxOptions.size()>(persistentState.fmRateRangeIndex));
     persistentState.fmRangeRangeIndex =
         static_cast<int>(clampIndex<kFmRangeMaxOptions.size()>(
             persistentState.fmRangeRangeIndex));
-    persistentState.vOctRangeIndex =
-        static_cast<int>(clampIndex<kVOctMinOptions.size()>(
-            persistentState.vOctRangeIndex));
+    persistentState.vOctRangeIndex = static_cast<int>(
+        clampIndex<kVOctMinOptions.size()>(persistentState.vOctRangeIndex));
     persistentState.polyphonyModeIndex =
         static_cast<int>(clampIndex<kPolyphonyChannelOptions.size()>(
             persistentState.polyphonyModeIndex));
@@ -226,24 +224,27 @@ struct BinauralBeater : Module {
   }
 
   int getPolyphonyChannels() const {
-    const size_t index =
-        clampIndex<kPolyphonyChannelOptions.size()>(
-            persistentState.polyphonyModeIndex);
+    const size_t index = clampIndex<kPolyphonyChannelOptions.size()>(
+        persistentState.polyphonyModeIndex);
     return kPolyphonyChannelOptions[index];
   }
 
-  bool polyphonyEnabled() const { return persistentState.polyphonyModeIndex > 0; }
+  bool polyphonyEnabled() const {
+    return persistentState.polyphonyModeIndex > 0;
+  }
 
   float getInputVoltageForChannel(int inputId, int channel) {
-    return polyphonyEnabled() ? inputs[inputId].getNormalPolyVoltage(0.f, channel)
-                              : inputs[inputId].getNormalVoltage(0.f);
+    return polyphonyEnabled()
+               ? inputs[inputId].getNormalPolyVoltage(0.f, channel)
+               : inputs[inputId].getNormalVoltage(0.f);
   }
 
   float getPitchVoltageForChannel(int channel) {
     const size_t rangeIndex =
         clampIndex<kVOctMinOptions.size()>(persistentState.vOctRangeIndex);
     const float voltage = getInputVoltageForChannel(V_OCT_IN_INPUT, channel);
-    return clamp(voltage, kVOctMinOptions[rangeIndex], kVOctMaxOptions[rangeIndex]);
+    return clamp(voltage, kVOctMinOptions[rangeIndex],
+                 kVOctMaxOptions[rangeIndex]);
   }
 
   EffectiveControls resolveTargets(int channel) {
@@ -253,10 +254,12 @@ struct BinauralBeater : Module {
     const float carrierMax =
         kCarrierMaxOptions[clampIndex<kCarrierMaxOptions.size()>(
             persistentState.carrierRangeIndex)];
-    const float amRateMax = kAmRateMaxOptions[clampIndex<kAmRateMaxOptions.size()>(
-        persistentState.amRateRangeIndex)];
-    const float fmRateMax = kFmRateMaxOptions[clampIndex<kFmRateMaxOptions.size()>(
-        persistentState.fmRateRangeIndex)];
+    const float amRateMax =
+        kAmRateMaxOptions[clampIndex<kAmRateMaxOptions.size()>(
+            persistentState.amRateRangeIndex)];
+    const float fmRateMax =
+        kFmRateMaxOptions[clampIndex<kFmRateMaxOptions.size()>(
+            persistentState.fmRateRangeIndex)];
     const float fmRangeMax =
         kFmRangeMaxOptions[clampIndex<kFmRangeMaxOptions.size()>(
             persistentState.fmRangeRangeIndex)];
@@ -284,11 +287,10 @@ struct BinauralBeater : Module {
         applyScaledCv(params[FM_RATE_KNOB_PARAM].getValue(),
                       getInputVoltageForChannel(FMRATE_CV_IN_INPUT, channel),
                       params[FM_RATE_CV_KNOB_PARAM].getValue(), 0.f, fmRateMax);
-    targets.fmRangeHz =
-        applyScaledCv(params[FM_RANGE_KNOB_PARAM].getValue(),
-                      getInputVoltageForChannel(FMRANGE_CV_IN_INPUT, channel),
-                      params[FM_RANGE_CV_KNOB_PARAM].getValue(), 0.f,
-                      fmRangeMax);
+    targets.fmRangeHz = applyScaledCv(
+        params[FM_RANGE_KNOB_PARAM].getValue(),
+        getInputVoltageForChannel(FMRANGE_CV_IN_INPUT, channel),
+        params[FM_RANGE_CV_KNOB_PARAM].getValue(), 0.f, fmRangeMax);
     targets.leftHigh = params[LR_SWITCH_PARAM].getValue() < 0.5f;
     return targets;
   }
@@ -394,15 +396,13 @@ struct BinauralBeater : Module {
       }
       smoothControls(channel, targets);
 
-      fmPhases[channel] =
-          wrapPhase(fmPhases[channel] + smoothedControls[channel].fmRateHz *
-                                            sampleTime);
-      amPhases[channel] =
-          wrapPhase(amPhases[channel] + smoothedControls[channel].amRateHz *
-                                            sampleTime);
+      fmPhases[channel] = wrapPhase(
+          fmPhases[channel] + smoothedControls[channel].fmRateHz * sampleTime);
+      amPhases[channel] = wrapPhase(
+          amPhases[channel] + smoothedControls[channel].amRateHz * sampleTime);
 
-      const float fmOffsetHz =
-          std::sin(kTwoPi * fmPhases[channel]) * smoothedControls[channel].fmRangeHz;
+      const float fmOffsetHz = std::sin(kTwoPi * fmPhases[channel]) *
+                               smoothedControls[channel].fmRangeHz;
       const float lowEarHz =
           clampFrequency(smoothedControls[channel].carrierHz + fmOffsetHz);
       const float highEarHz =
@@ -421,12 +421,12 @@ struct BinauralBeater : Module {
       rightPhases[channel] =
           wrapPhase(rightPhases[channel] + rightFrequencyHz * sampleTime);
 
-      outputs[L_OUT_OUTPUT].setVoltage(
-          std::sin(kTwoPi * leftPhases[channel]) * amGain * kAudioLevelVolts,
-          channel);
-      outputs[R_OUT_OUTPUT].setVoltage(
-          std::sin(kTwoPi * rightPhases[channel]) * amGain * kAudioLevelVolts,
-          channel);
+      outputs[L_OUT_OUTPUT].setVoltage(std::sin(kTwoPi * leftPhases[channel]) *
+                                           amGain * kAudioLevelVolts,
+                                       channel);
+      outputs[R_OUT_OUTPUT].setVoltage(std::sin(kTwoPi * rightPhases[channel]) *
+                                           amGain * kAudioLevelVolts,
+                                       channel);
 
       lightBeatHz += smoothedControls[channel].beatHz;
     }
@@ -434,9 +434,9 @@ struct BinauralBeater : Module {
     lightBeatHz /= activeChannels;
     beatLightPhase = wrapPhase(beatLightPhase + lightBeatHz * sampleTime);
     const float blinkLevel =
-        lightBeatHz > 0.001f ? 0.15f + 0.85f * 0.5f *
-                                        (std::sin(kTwoPi * beatLightPhase) + 1.f)
-                             : 0.f;
+        lightBeatHz > 0.001f
+            ? 0.15f + 0.85f * 0.5f * (std::sin(kTwoPi * beatLightPhase) + 1.f)
+            : 0.f;
     lights[BF_LIGHT_LIGHT].setBrightnessSmooth(blinkLevel, args.sampleTime);
   }
 };
@@ -493,6 +493,8 @@ struct BinauralBeaterWidget : ModuleWidget {
         Vec(186.256, 303.872), module, BinauralBeater::FMRATE_CV_IN_INPUT));
     addInput(createInputCentered<PJ301MPort>(
         Vec(257.01, 303.872), module, BinauralBeater::FMRANGE_CV_IN_INPUT));
+    addInput(createInputCentered<PJ301MPort>(Vec(265.327, 35.2), module,
+                                             BinauralBeater::SYNC_IN_INPUT));
 
     addOutput(createOutputCentered<PJ301MPort>(Vec(186.789, 348.384), module,
                                                BinauralBeater::L_OUT_OUTPUT));
@@ -512,13 +514,13 @@ struct BinauralBeaterWidget : ModuleWidget {
 
     menu->addChild(new MenuSeparator());
     menu->addChild(createMenuLabel("BinauralBeater"));
-    menu->addChild(createSubmenuItem(
-        "Dial maxima", "",
-        [module](Menu *submenu) {
+    menu->addChild(
+        createSubmenuItem("Dial maxima", "", [module](Menu *submenu) {
           submenu->addChild(createIndexSubmenuItem(
               "Beat frequency", {"100 Hz", "50 Hz", "20 Hz", "10 Hz"},
               [module]() {
-                return static_cast<size_t>(module->persistentState.beatRangeIndex);
+                return static_cast<size_t>(
+                    module->persistentState.beatRangeIndex);
               },
               [module](size_t index) {
                 module->persistentState.beatRangeIndex =
@@ -585,7 +587,8 @@ struct BinauralBeaterWidget : ModuleWidget {
         "Polyphony",
         {"Disabled (mono)", "2 channels", "3 channels", "4 channels"},
         [module]() {
-          return static_cast<size_t>(module->persistentState.polyphonyModeIndex);
+          return static_cast<size_t>(
+              module->persistentState.polyphonyModeIndex);
         },
         [module](size_t index) {
           module->persistentState.polyphonyModeIndex = static_cast<int>(index);
